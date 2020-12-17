@@ -1,0 +1,63 @@
+<!doctype html>
+
+<html lang="en-US">
+<head>
+<link rel="stylesheet" href="static/style.css">
+	 
+<title></title>
+
+<h1> Dad's Rental List</h1>
+		
+<h2> Updated 
+<script LANGUAGE="Javascript">
+// Array of month Names
+var monthNames = new Array(
+"January","February","March","April","May","June","July",
+"August","September","October","November","December");
+var now = new Date();
+document.write(monthNames[now.getMonth()] + " " + 
+now.getDate() + ", " + now.getFullYear());
+</script>
+</h2>	
+
+
+  <h3>The following is a list of rental properties for $450 or under per week in Coffs Harbour and surrounding areas.<br>
+<br/>Click on the description headline to take you to the listing</h3>
+
+		
+    <table>
+      <th>Cost</th>
+      <th>Type</th>
+      <th>Address</th>
+      <th>Description</th>
+      <th>Agent & Contact</th>
+      {% for property in properties %}
+        <tr>
+          <td><h5>{{ property.cost }}</h5></td>
+          <td><h5>{{ property.type }}<h5></td>
+          <td><h5>{{ property.suburb }}</h5>
+          {{ property.streetNumber }}
+          {{ property.streetName }}
+          {{ property.street }}
+          </td>
+          <td>
+            <h5><a id = "proplink"><a target="_blank" href= {{ property.link  }}> {{ property.headline }}</a></h5>
+            {{ property.description }}
+          </td>
+			    <td>
+            <h5>{{ property.agency }}</h5>
+            <p>
+              {{ property.agent_name }}</br>
+              {{property.agent_phone}}</br>
+    
+            </p>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  
+	</body>
+</html>
+ 
+	
+	

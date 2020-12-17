@@ -1,0 +1,122 @@
+def api_data():
+
+  # this guy did it
+  # https://colab.research.google.com/drive/16wg0VWPim1-dwt7W8jZuJrqFRMrW8iQ0#scrollTo=tlwYltsjF3DO
+
+  # importing the requests library 
+  import requests, json 
+
+
+  ### Authorisation
+  client_id = "client_d99e669b91f51a49c98f1fcc51c93678"
+  # client_id = "client_f7df61b29c3084ef789ac0d626c302aa"
+  client_secret = "secret_875b2f6d33a5ccd99b3a3cfe3903d4ea"
+  # client_secret = "secret_0c0a215562fb9997e098a7e1b3cd12b6"
+
+  # POST request for token
+  response = requests.post('https://auth.domain.com.au/v1/connect/token', data = {'client_id':client_id, "client_secret": client_secret,"grant_type":"client_credentials","scope":"api_listings_read api_agencies_read api_properties_read","Content-Type":"text/json"})
+  token=response.json()
+  access_token=token["access_token"]
+
+  auth = {"Authorization":"Bearer "+access_token}
+
+
+  # defining the api-endpoint  
+  API_ENDPOINT = "https://api.domain.com.au/v1/listings/residential/_search"
+
+
+
+  raw_data = {
+    "listingType":"Rent",
+    "maxprice":250,
+    "locations":[
+      {
+        "state":"NSW",
+        "region":"",
+        "area":"",
+        "suburb":"", 
+        "postCode":"",
+        "includeSurroundingSuburbs":True
+      }, 
+      {
+        "state":"NSW",
+        "region":"",
+        "area":"",
+        "suburb":"", 
+        "postCode":"",
+        "includeSurroundingSuburbs":True
+      }
+    ]
+  }
+
+  ### query data
+  locations = [('2450', "Coffs Harbour")]
+  prop_ids = []
+
+  for location in locations:
+    raw_data["locations"]['postCode'] = location[0]
+    raw_data["locations"]['suburb'] = location[1]
+    # data to be sent to api 
+    data = json.dumps(raw_data)
+    print(data)
+
+    ### Make query
+    # sending post request and saving response as response object 
+    r = requests.post(url = API_ENDPOINT, headers=auth, data = data) 
+    
+    # extracting response text  
+    response = r.text 
+    print(response)
+    response_data = json.loads(response)
+
+    properties = []
+
+    for i in response_data:
+      print(i)
+      prop_id = i['listing']["id"]
+      if prop_id in prop_ids:
+        continue
+
+      prop = {}
+      slug = i['listing']["listingSlug"]
+      
+      advert = i['listing']["advertiser"]
+
+
+      url = "https://api.domain.com.au/v1/listings/"+str(prop_id)
+      prop["link"] = "domain.com.au/" + slug
+      request = requests.get(url,headers=auth)
+      r=request.json()
+
+      prop["type"] = r["propertyTypes"][0]
+      prop["headline"] = r["headline"]
+      prop["description"] = r["description"]
+      # prop["pricedetails"] = r["priceDetails"]
+      address_dict = r["addressParts"]
+      address = address_dict['displayAddress']
+      prop["address"] = address
+      prop["datelisted"] = r["dateListed" ]
+      prop["dateavailable"] = r["dateAvailable"]
+      prop["advert"] = r["advertiserIdentifiers"]
+      prop["cost"] =  r["priceDetails"]["displayPrice"]
+      properties.append(prop)
+
+      
+      agency_api_endpoint = "https://api.domain.com.au/v1/agencies/"
+      agency_url = agency_api_endpoint+str(r["advertiserIdentifiers"]["advertiserId"])
+      agency_response = requests.get(agency_url,headers=auth)
+      agent_r = agency_response.json()
+      prop['agency'] = agent_r['name']
+
+
+      agent_api_endpoint = "https://api.domain.com.au/v1/agents/"
+      for a in r["advertiserIdentifiers"]["contactIds"]:
+        agent_url = agent_api_endpoint+str(a)
+        agent_request = requests.get(agent_url,headers=auth)
+        agent_r = agent_request.json()
+        prop['agent_name'] = agent_r['firstName'] + " " + agent_r['lastName']
+        prop['agent_email'] = agent_r['email']
+        prop['agent_phone'] = agent_r['phone']
+
+  return properties
+
